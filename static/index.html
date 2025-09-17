@@ -824,3 +824,27 @@
     </script>
 </body>
 </html>
+<h2>Pregúntale a Bludee 🩸</h2>
+
+<input id="pregunta" type="text" placeholder="Escribe tu duda aquí">
+<button onclick="enviarPregunta()">Enviar</button>
+
+<p><strong>Respuesta:</strong></p>
+<div id="respuesta"></div>
+
+<script>
+async function enviarPregunta() {
+  const q = document.getElementById("pregunta").value.trim();
+  if (!q) return;
+
+  // llamada al backend
+  const res = await fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ q })
+  });
+
+  const data = await res.json();
+  document.getElementById("respuesta").innerText = data.answer;
+}
+</script>
