@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLUDEE - Sistema de Banco de Sangre</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(220,38,38,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            color: #dc2626;
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            font-weight: 700;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .status-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .status-available { color: #28a745; }
+        .status-pending { color: #ffc107; }
+        .status-critical { color: #dc3545; }
+        .status-users { color: #007bff; }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .user-welcome {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .user-details h3 {
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+
+        .user-details p {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .current-time {
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .alerts-banner {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 2px solid #f59e0b;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .alerts-banner.show {
+            display: block;
+            animation: slideDown 0.5s ease;
+        }
+
+        .alerts-title {
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alerts-list {
+            color: #92400e;
+            line-height: 1.6;
+        }
+
+        .main-menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .menu-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--section-color);
+            border-radius: 20px 20px 0 0;
+        }
+
+        .menu-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .section-emergency { --section-color: linear-gradient(135deg, #dc2626, #ef4444); }
+        .section-inventory { --section-color: linear-gradient(135deg, #2563eb, #3b82f6); }
+        .section-clinical { --section-color: linear-gradient(135deg, #059669, #10b981); }
+        .section-reports { --section-color: linear-gradient(135deg, #ea580c, #f97316); }
+        .section-admin { --section-color: linear-gradient(135deg, #7c3aed, #8b5cf6); }
+        .section-quality { --section-color: linear-gradient(135deg, #0891b2, #06b6d4); }
+
+        .menu-section h3 {
+            color: #2c3e50;
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-section .icon {
+            font-size: 1.8em;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            color: white;
+            background: var(--section-color);
+        }
+
+        .menu-item {
+            display: block;
+            padding: 15px 20px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .menu-item:hover {
+            background: #e9ecef;
+            transform: translateX(8px);
+            border-color: var(--section-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-item.emergency {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            color: #991b1b;
+            font-weight: 600;
+        }
+
+        .menu-item.emergency:hover {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            transform: translateX(8px) scale(1.02);
+        }
+
+        .quick-actions {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 30px;
+        }
+
+        .quick-actions h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .action-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-card .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .action-card .title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .action-card .description {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .legend-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 30px;
+        }
+
+        .legend-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .legend-green { background-color: #28a745; }
+        .legend-yellow { background-color: #ffc107; }
+        .legend-red { background-color: #dc3545; }
+        .legend-gray { background-color: #6c757d; }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .logout-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+
+        .logout-btn:hover {
+            background: linear-gradient(135deg, #b91c1c, #dc2626);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2.2em;
+            }
+            
+            .main-menu {
+                grid-template-columns: 1fr;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .system-status {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .legend-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="logout-btn" onclick="logout()">🚪 Cerrar Sesión</button>
+    
+    <div class="container">
+        <!-- Header Principal -->
+        <div class="header">
+            <h1>🩸 BLUDEE</h1>
+            <p class="subtitle">Sistema Integral de Banco de Sangre - Puerto Rico</p>
+            
+            <div class="system-status">
+                <div class="status-card">
+                    <div class="status-number status-available" id="available-units">45</div>
+                    <div class="status-label">Unidades Disponibles</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-number status-pending" id="pending-requests">3</div>
+                    <div class="status-label">Solicitudes Pendientes</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-number status-critical" id="critical-alerts">2</div>
+                    <div class="status-label">Alertas Críticas</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-number status-users" id="active-users">8</div>
+                    <div class="status-label">Usuarios Activos</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información del Usuario -->
+        <div class="user-info">
+            <div class="user-welcome">
+                <div class="user-avatar" id="user-avatar">NM</div>
+                <div class="user-details">
+                    <h3 id="username">Norma I. Medina, MT</h3>
+                    <p id="user-role">Tecnólogo Médico Principal</p>
+                </div>
+            </div>
+            <div class="current-time" id="current-time"></div>
+        </div>
+
+        <!-- Banner de Alertas -->
+        <div class="alerts-banner" id="alerts-banner">
+            <div class="alerts-title">
+                <span>⚠️</span>
+                <span>Alertas del Sistema</span>
+            </div>
+            <div class="alerts-list" id="alerts-list">
+                <!-- Se cargarán dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Acciones Rápidas -->
+        <div class="quick-actions">
+            <h3>⚡ Acciones Rápidas</h3>
+            <div class="actions-grid">
+                <button class="action-card" onclick="navigateToEmergency()">
+                    <div class="icon">🚨</div>
+                    <div class="title">Emergencia</div>
+                    <div class="description">Despacho urgente</div>
+                </button>
+                <a href="Registro de Unidad Recibida Simulador.html" class="action-card">
+                    <div class="icon">📥</div>
+                    <div class="title">Recibir Unidad</div>
+                    <div class="description">Registrar nueva unidad</div>
+                </a>
+                <a href="inventario_actual.html" class="action-card">
+                    <div class="icon">📦</div>
+                    <div class="title">Ver Inventario</div>
+                    <div class="description">Estado actual</div>
+                </a>
+                <a href="gestion_de_donantes.html" class="action-card">
+                    <div class="icon">👥</div>
+                    <div class="title">Gestión Donantes</div>
+                    <div class="description">Administrar donantes</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Menú Principal -->
+        <div class="main-menu">
+            <!-- Emergencias y Despacho -->
+            <div class="menu-section section-emergency">
+                <h3><span class="icon">🚨</span>Emergencias y Despacho</h3>
+                <a class="menu-item emergency" href="Registro de Despacho de Unidad de Emergencia.html">🚨 Despacho de Emergencia</a>
+                <a class="menu-item" href="despacho_unidad_pdf_popup.html">📤 Despacho de Unidad</a>
+                <a class="menu-item" href="modulo_componentes_devueltos.html">📦 Componentes Devueltos</a>
+            </div>
+
+            <!-- Inventario y Recepción -->
+            <div class="menu-section section-inventory">
+                <h3><span class="icon">📦</span>Inventario y Recepción</h3>
+                <a class="menu-item" href="Registro de Unidad Recibida Simulador.html">📥 Registrar Unidad Recibida</a>
+                <a class="menu-item" href="trazabilidad_banco_sangre.html">🔄 Trazabilidad</a>
+                <a class="menu-item" href="inventario_actual.html">📊 Inventario Actual</a>
+                <a class="menu-item" href="gestion_de_donantes.html">👥 Gestión de Donantes</a>
+            </div>
+
+            <!-- Área Clínica -->
+            <div class="menu-section section-clinical">
+                <h3><span class="icon">🏥</span>Área Clínica</h3>
+                <a class="menu-item" href="notas_clinicas_internas.html">📝 Notas Clínicas</a>
+                <a class="menu-item" href="historial_transfusion_paciente.html">📋 Historial de Transfusión</a>
+                <a class="menu-item" href="#" onclick="showTransfusionModule()">💉 Registro de Transfusiones</a>
+                <a class="menu-item" href="prueba_de_compatibilidad.html">🔬 Pruebas de Compatibilidad</a>
+            </div>
+
+            <!-- Reportes y Análisis -->
+            <div class="menu-section section-reports">
+                <h3><span class="icon">📊</span>Reportes y Análisis</h3>
+                <a class="menu-item" href="expedientes_mensuales.html">📋 Expedientes Mensuales</a>
+                <a class="menu-item" href="auditorias_y_logs.html">📋 Auditorías y Logs</a>
+                <a class="menu-item" href="#" onclick="showStatsModule()">📈 Estadísticas Generales</a>
+                <a class="menu-item" href="#" onclick="showQualityModule()">🎯 Indicadores de Calidad</a>
+            </div>
+
+            <!-- Administración -->
+            <div class="menu-section section-admin">
+                <h3><span class="icon">⚙️</span>Administración</h3>
+                <a class="menu-item" href="usuarios.html">👥 Gestión de Usuarios</a>
+                <a class="menu-item" href="#" onclick="showPermissionsModule()">🔐 Roles y Permisos</a>
+                <a class="menu-item" href="#" onclick="showConfigModule()">⚙️ Configuración</a>
+                <a class="menu-item" href="#" onclick="showBackupModule()">💾 Respaldos</a>
+            </div>
+
+            <!-- Calidad y Soporte -->
+            <div class="menu-section section-quality">
+                <h3><span class="icon">🛡️</span>Calidad y Soporte</h3>
+                <a class="menu-item" href="chatbot.html">🤖 Asistente Virtual</a>
+                <a class="menu-item" href="#" onclick="showMaintenanceModule()">🔧 Mantenimiento</a>
+                <a class="menu-item" href="#" onclick="showHelpModule()">❓ Ayuda y Soporte</a>
+                <a class="menu-item" href="#" onclick="showTrainingModule()">📚 Capacitación</a>
+            </div>
+        </div>
+
+        <!-- Leyenda de Estados -->
+        <div class="legend-section">
+            <h3>📋 Leyenda de Estado de Componentes</h3>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <div class="legend-color legend-green"></div>
+                    <span>Verde: Unidad fresca (más de 3 días de validez)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-yellow"></div>
+                    <span>Amarillo: Próxima a vencer (1–3 días)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-red"></div>
+                    <span>Rojo: Vence hoy o ya vencida</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-gray"></div>
+                    <span>Gris: No hay unidades disponibles</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>&copy; 2025 BLUDEE - Sistema de Banco de Sangre | Puerto Rico</p>
+            <p>Versión 2.5 | "Cada gota cuenta. Cada vida importa. Conectados por la salud."</p>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentUser = {
+            name: 'Norma I. Medina',
+            role: 'Tecnólogo Médico Principal',
+            initials: 'NM'
+        };
+
+        // Actualizar fecha y hora
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('current-time').textContent = now.toLocaleString('es-PR', options);
+        }
+
+        // Navegación general
+        function navigateTo(page) {
+            if (page.startsWith('#')) {
+                alert(`Navegando a: ${page}\n\nMódulo en desarrollo...`);
+            } else {
+                window.location.href = page;
+            }
+        }
+
+        // Navegación de emergencia
+        function navigateToEmergency() {
+            if (confirm('¿Confirma que es una situación de EMERGENCIA?\n\nEsto activará el protocolo de despacho urgente.')) {
+                window.location.href = 'Registro de Despacho de Unidad de Emergencia.html';
+            }
+        }
+
+        // Módulos en desarrollo
+        function showTransfusionModule() {
+            alert('Módulo de Transfusiones\n\n💉 Características:\n• Registro en tiempo real\n• Monitoreo de reacciones\n• Control de volúmenes\n• Documentación completa\n\n🚧 En desarrollo...');
+        }
+
+        function showStatsModule() {
+            alert('Módulo de Estadísticas\n\n📈 Características:\n• Dashboards interactivos\n• Análisis de tendencias\n• Métricas de rendimiento\n• Exportación de datos\n\n🚧 En desarrollo...');
+        }
+
+        function showQualityModule() {
+            alert('Módulo de Calidad\n\n🎯 Características:\n• Indicadores KPI\n• Control de procesos\n• Auditorías internas\n• Mejora continua\n\n🚧 En desarrollo...');
+        }
+
+        function showPermissionsModule() {
+            alert('Módulo de Permisos\n\n🔐 Características:\n• Gestión de roles\n• Control de acceso\n• Permisos granulares\n• Auditoría de seguridad\n\n🚧 En desarrollo...');
+        }
+
+        function showConfigModule() {
+            alert('Módulo de Configuración\n\n⚙️ Características:\n• Configuración del sistema\n• Parámetros de laboratorio\n• Preferencias de usuario\n• Backup automático\n\n🚧 En desarrollo...');
+        }
+
+        function showBackupModule() {
+            alert('Módulo de Respaldos\n\n💾 Características:\n• Backup automático\n• Restauración de datos\n• Versionado de archivos\n• Monitoreo de integridad\n\n🚧 En desarrollo...');
+        }
+
+        function showMaintenanceModule() {
+            alert('Módulo de Mantenimiento\n\n🔧 Características:\n• Mantenimiento preventivo\n• Calibración de equipos\n• Registro de incidencias\n• Programación de tareas\n\n🚧 En desarrollo...');
+        }
+
+        function showHelpModule() {
+            alert('Módulo de Ayuda\n\n❓ Características:\n• Manual de usuario\n• Tutoriales interactivos\n• FAQ del sistema\n• Soporte técnico\n\n🚧 En desarrollo...');
+        }
+
+        function showTrainingModule() {
+            alert('Módulo de Capacitación\n\n📚 Características:\n• Cursos online\n• Certificaciones\n• Evaluaciones\n• Progreso de aprendizaje\n\n🚧 En desarrollo...');
+        }
+
+        // Cerrar sesión
+        function logout() {
+            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                alert('Cerrando sesión...\n\nGracias por usar BLUDEE.');
+                // Aquí redirigirías a la página de login
+                // window.location.href = 'login.html';
+            }
+        }
+
+        // Cargar estadísticas del sistema
+        function loadSystemStats() {
+            // Simulación de datos en tiempo real
+            const stats = {
+                available: Math.floor(Math.random() * 20) + 35,
+                pending: Math.floor(Math.random() * 5) + 1,
+                critical: Math.floor(Math.random() * 3),
+                users: Math.floor(Math.random() * 5) + 6
+            };
+
+            document.getElementById('available-units').textContent = stats.available;
+            document.getElementById('pending-requests').textContent = stats.pending;
+            document.getElementById('critical-alerts').textContent = stats.critical;
+            document.getElementById('active-users').textContent = stats.users;
+
+            // Mostrar alertas si hay críticas
+            if (stats.critical > 0) {
+                showCriticalAlerts(stats);
+            }
+        }
+
+        // Mostrar alertas críticas
+        function showCriticalAlerts(stats) {
+            const alertsBanner = document.getElementById('alerts-banner');
+            const alertsList = document.getElementById('alerts-list');
+            
+            let alerts = [];
+            
+            if (stats.critical > 0) {
+                alerts.push(`• ${stats.critical} unidad(es) próxima(s) a vencer en las próximas 24 horas`);
+            }
+            
+            if (stats.available < 40) {
+                alerts.push('• Stock bajo en algunos tipos de sangre');
+            }
+            
+            if (alerts.length > 0) {
+                alertsList.innerHTML = alerts.join('<br>');
+                alertsBanner.classList.add('show');
+            }
+        }
+
+        // Verificar autenticación
+        function checkAuthentication() {
+            // Simulación de verificación
+            const isAuthenticated = true; // En producción, verificar con el servidor
+            
+            if (!isAuthenticated) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Cargar información del usuario
+            document.getElementById('username').textContent = currentUser.name;
+            document.getElementById('user-role').textContent = currentUser.role;
+            document.getElementById('user-avatar').textContent = currentUser.initials;
+        }
+
+        // Atajos de teclado
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey) {
+                switch(event.key) {
+                    case '1':
+                        event.preventDefault();
+                        navigateTo('Registro de Despacho de Unidad de Emergencia.html');
+                        break;
+                    case '2':
+                        event.preventDefault();
+                        navigateTo('Registro de Unidad Recibida Simulador.html');
+                        break;
+                    case '3':
+                        event.preventDefault();
+                        navigateTo('inventario_actual.html');
+                        break;
+                    case '4':
+                        event.preventDefault();
+                        navigateTo('gestion_de_donantes.html');
+                        break;
+                    case '5':
+                        event.preventDefault();
+                        navigateTo('prueba_de_compatibilidad.html');
+                        break;
+                }
+            }
+        });
+
+        // Verificar conexión
+        function checkConnection() {
+            if (!navigator.onLine) {
+                alert('⚠️ Conexión perdida\n\nAlgunas funciones pueden no estar disponibles.');
+            }
+        }
+
+        // Mostrar notificaciones
+        function showNotification(message, type = 'info') {
+            console.log(`${type.toUpperCase()}: ${message}`);
+            // En producción, mostrar notificaciones toast
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthentication();
+            updateDateTime();
+            loadSystemStats();
+            
+            // Actualizar estadísticas cada 30 segundos
+            setInterval(loadSystemStats, 30000);
+            
+            // Actualizar hora cada segundo
+            setInterval(updateDateTime, 1000);
+            
+            showNotification('Sistema BLUDEE iniciado correctamente', 'success');
+        });
+
+        // Eventos de conexión
+        window.addEventListener('online', () => showNotification('Conexión restablecida', 'success'));
+        window.addEventListener('offline', checkConnection);
+
+        // Prevenir cierre accidental
+        window.addEventListener('beforeunload', function(e) {
+            if (document.querySelector('.menu-item:hover') || document.querySelector('.action-card:hover')) {
+                return; // Permitir navegación normal
+            }
+            
+            e.preventDefault();
+            e.returnValue = '¿Está seguro que desea salir del sistema BLUDEE?';
+        });
+    </script>
+</body>
+</html>
